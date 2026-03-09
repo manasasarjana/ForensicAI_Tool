@@ -1,0 +1,60 @@
+DIGITAL FORENSIC RAW EVIDENCE FILE
+
+Case ID: DF-2026-045 Investigator ID: INV-7821 Date of Acquisition:
+21-02-2026 Device Type: Windows 11 Workstation Hostname:
+WORKSTATION-ALPHA IP Address: 10.0.0.24 MAC Address: 08-00-27-9B-3C-77
+
+  -----------------------------------
+  SYSTEM INFORMATION
+  -----------------------------------
+  OS Version: Windows 11 Enterprise
+  (Build 22631) System Time:
+  2026-02-21 09:12:44 IST Logged-in
+  User: user_account_01 Last Boot
+  Time: 2026-02-21 07:05:12 IST
+
+  -----------------------------------
+
+FILE SYSTEM ARTIFACTS
+
+Suspicious File Detected: File Name: system_update_patch.scr File Path:
+C:_account_01_update_patch.scr File Size: 512000 bytes SHA256 Hash:
+b7e4d2c8f123456789abcdef9876543210abcdef9876543210abcdef98765432 Created
+Time: 2026-02-20 22:14:08 IST Modified Time: 2026-02-20 22:14:08 IST
+Accessed Time: 2026-02-21 08:10:55 IST
+
+  ---------------------------------------------------
+  BROWSER HISTORY ARTIFACTS
+  ---------------------------------------------------
+  URL: http://suspicious-portal.net/auth Access Time:
+  2026-02-20 22:05:17 IST
+
+  URL:
+  http://file-share-unknown.org/download/update.scr
+  Access Time: 2026-02-20 22:09:41 IST
+  ---------------------------------------------------
+
+NETWORK CONNECTION LOGS
+
+Remote IP: 203.91.112.54 Port: 8080 Protocol: TCP Connection Time:
+2026-02-20 22:12:33 IST Status: Established
+
+  -----------------------------------
+  REGISTRY ENTRIES (PERSISTENCE)
+  -----------------------------------
+  Registry Path: HKCU Entry Name:
+  SystemUpdater Entry Value:
+  C:_account_01_update_patch.scr
+
+  -----------------------------------
+
+EMAIL ARTIFACTS
+
+Sender: unknown.sender@external-mail.com Recipient:
+internal.user@company.local Subject: Urgent System Update Required
+Attachment: system_update_patch.scr Received Time: 2026-02-20 21:58:02
+IST
+
+  --------------------------
+  END OF RAW EVIDENCE FILE
+  --------------------------
