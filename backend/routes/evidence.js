@@ -4,8 +4,9 @@ const path = require('path');
 const Evidence = require('../models/Evidence');
 const Case = require('../models/Case');
 const { auth, adminAuth, auditLogger } = require('../middleware/auth');
-const { upload, generateHashes, handleUploadError, generateFileHash } = require('../middleware/upload');
+const { upload, handleUploadError, generateFileHash } = require('../middleware/upload');
 const { validate, evidenceSchema } = require('../middleware/validation');
+const { evidenceHashQueue } = require('../config/queue');
 
 const router = express.Router();
 
@@ -56,7 +57,6 @@ router.post('/upload',
   auth,
   upload.array('evidence', 10),
   handleUploadError,
-  generateHashes,
   validate(evidenceSchema),
   auditLogger('evidence_uploaded', 'evidence'),
   async (req, res) => {
@@ -98,8 +98,7 @@ router.post('/upload',
           fileType: file.mimetype,
           fileSize: file.size,
           filePath: file.path,
-          sha256Hash: file.sha256Hash,
-          md5Hash: file.md5Hash,
+          status: 'processing',
           uploadedBy: req.userId,
           description: description || '',
           tags: tags ? (Array.isArray(tags) ? tags : [tags]) : [],
@@ -108,11 +107,18 @@ router.post('/upload',
             performedBy: req.userId,
             timestamp: new Date(),
             ipAddress: req.ip || req.connection.remoteAddress,
-            notes: 'Initial evidence upload'
+            notes: 'Initial evidence upload (Background processing started)'
           }]
         });
         
         await evidence.save();
+
+        // Add to background processing queue
+        await evidenceHashQueue.add('process-evidence-hash', {
+          evidenceIdDb: evidence._id,
+          filePath: file.path
+        });
+
         await evidence.populate('uploadedBy', 'username firstName lastName');
         evidenceRecords.push(evidence);
       }

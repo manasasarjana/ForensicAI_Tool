@@ -71,6 +71,7 @@ app.use('/api/notifications', notificationsRoutes);
 
 // Initialize Background Workers
 require('./workers/reportWorker');
+require('./workers/evidenceWorker');
 
 // Health check
 app.get('/api/health', (req, res) => {

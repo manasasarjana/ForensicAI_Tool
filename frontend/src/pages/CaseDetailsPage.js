@@ -348,7 +348,11 @@ const CaseDetailsPage = () => {
                       </td>
                       <td className="p-4">
                         <span className="font-mono text-xs text-dark-400">
-                          {item.sha256Hash.substring(0, 16)}...
+                          {item.status === 'processing' ? (
+                            <span className="text-orange-400 animate-pulse italic">Hashing...</span>
+                          ) : (
+                            `${item.sha256Hash?.substring(0, 16)}...`
+                          )}
                         </span>
                       </td>
                       <td className="p-4">

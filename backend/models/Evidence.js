@@ -36,10 +36,16 @@ const evidenceSchema = new mongoose.Schema({
   },
   sha256Hash: {
     type: String,
-    required: true
+    required: false
   },
   md5Hash: {
-    type: String
+    type: String,
+    required: false
+  },
+  status: {
+    type: String,
+    enum: ['processing', 'completed', 'error'],
+    default: 'processing'
   },
   uploadedBy: {
     type: mongoose.Schema.Types.ObjectId,

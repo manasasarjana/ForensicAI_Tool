@@ -265,7 +265,13 @@ const EvidencePage = () => {
                     {caseEvidence.map((ev) => (
                       <tr key={ev._id} className="border-b border-dark-700/50 hover:bg-dark-800 transition-colors">
                         <td className="py-3 text-dark-100">{ev.originalName}</td>
-                        <td className="py-3 font-mono text-[10px] text-dark-400">{ev.sha256Hash?.substring(0, 16)}...</td>
+                        <td className="py-3 font-mono text-[10px] text-dark-400">
+                          {ev.status === 'processing' ? (
+                            <span className="text-orange-400 animate-pulse italic">Hashing...</span>
+                          ) : (
+                            `${ev.sha256Hash?.substring(0, 16)}...`
+                          )}
+                        </td>
                         <td className="py-3 text-dark-400">{new Date(ev.createdAt).toLocaleDateString()}</td>
                          <td className="py-3 text-right">
                           <div className="flex justify-end space-x-2">
