@@ -38,18 +38,21 @@ const reportWorker = new Worker('ReportGeneration', async job => {
     return { success: true };
     
   } catch (error) {
-    console.error(`AI generation error for job ${job.id}:`, error);
+    console.error(`❌ AI generation error for job ${job.id}:`, error.stack || error);
     
     const report = await Report.findById(reportIdDb);
     if (report) {
       report.status = 'draft';
-      report.metadata = { error: error.message };
+      report.metadata = { 
+        error: error.message,
+        failedAt: new Date()
+      };
       await report.save();
       
       await Notification.create({
         userId: report.generatedBy,
         title: 'Report Generation Failed',
-        message: `Failed to generate report for ${caseData.caseId}: ${error.message}`,
+        message: `Failed to generate report for ${caseData.caseId}. Error: ${error.message}. Please try again or contact support if the issue persists.`,
         type: 'error',
         actionUrl: `/reports/${report._id}`
       });

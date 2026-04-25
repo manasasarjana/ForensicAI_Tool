@@ -70,7 +70,7 @@ const generatePDF = async (report) => {
       doc.moveDown();
       
       doc.fontSize(11);
-      doc.text(`Report Created: ${report.createdAt.toISOString()}`);
+      doc.text(`Report Created: ${new Date(report.createdAt).toISOString()}`);
       doc.text(`Created by: ${report.generatedBy.firstName} ${report.generatedBy.lastName}`);
       
       if (report.revisionHistory && report.revisionHistory.length > 0) {
@@ -325,7 +325,7 @@ const generateDOCX = async (report) => {
           new Paragraph({
             children: [
               new TextRun({
-                text: `Report Created: ${report.createdAt.toISOString()}\n`
+                text: `Report Created: ${new Date(report.createdAt).toISOString()}\n`
               }),
               new TextRun({
                 text: `Created by: ${report.generatedBy.firstName} ${report.generatedBy.lastName}\n`

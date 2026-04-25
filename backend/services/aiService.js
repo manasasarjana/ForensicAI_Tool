@@ -5,12 +5,19 @@ const groq = new Groq({
 });
 
 async function generateAIReport(caseData, evidence) {
+  const start = Date.now();
 
-  const evidenceSummary = evidence
-    .map((e, index) => `${index + 1}. [${e.createdAt.toISOString()}] ${e.originalName} (${e.fileType}) - ${e.description || "No description provided"}`)
-    .join("\n");
+  try {
+    const evidenceSummary = (evidence || [])
+      .map((e, index) => {
+        const date = e.createdAt ? new Date(e.createdAt).toISOString() : "N/A";
+        return `${index + 1}. [${date}] ${e.originalName} (${e.fileType}) - ${e.description || "No description provided"}`;
+      })
+      .join("\n");
 
-  const prompt = `
+    const incidentDate = caseData.incidentDate ? new Date(caseData.incidentDate).toISOString() : "Unknown";
+
+    const prompt = `
 You are a certified digital forensic investigator writing an official digital forensic investigation report.
 
 Generate a highly detailed and professional investigation report based on the evidence provided.
@@ -40,7 +47,7 @@ CASE INFORMATION
 Case ID: ${caseData.caseId}
 Case Title: ${caseData.title}
 Case Description: ${caseData.description || "N/A"}
-Incident Date: ${caseData.incidentDate ? caseData.incidentDate.toISOString() : "Unknown"}
+Incident Date: ${incidentDate}
 
 EVIDENCE DATA (USE THIS TO GENERATE THE TIMELINE AND ANALYSIS):
 ${evidenceSummary}
@@ -77,9 +84,6 @@ Do not include markdown or backticks.
 The Timeline section MUST reflect the actual evidence timestamps provided.
 `;
 
-  const start = Date.now();
-
-  try {
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [{ role: "user", content: prompt }],
@@ -107,7 +111,7 @@ The Timeline section MUST reflect the actual evidence timestamps provided.
       throw new Error("AI returned invalid JSON");
     }
 
-    if (parsed.timeline) {
+    if (parsed.timeline && typeof parsed.timeline === 'string') {
       parsed.timeline = parsed.timeline
         .replace(/,\s*/g, "\n")
         .replace(/\n+/g, "\n")
@@ -139,7 +143,6 @@ The Timeline section MUST reflect the actual evidence timestamps provided.
       wordCount: 50
     };
   }
-
 }
 
 module.exports = {
