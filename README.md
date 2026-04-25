@@ -85,7 +85,7 @@ The platform includes a rigorous testing suite:
 ---
 
 ## 📝 License & Attribution
-Prepared by **Group G1183** - Keshav Memorial Institute of Technology.  
+Prepared by **Group G1081** - Keshav Memorial Institute of Technology.  
 Licensed under the MIT License.
 
 ---
