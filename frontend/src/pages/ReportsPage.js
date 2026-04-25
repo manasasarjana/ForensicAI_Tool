@@ -1,5 +1,5 @@
 import React from 'react';
-import { FileText, Eye, Download, Zap } from 'lucide-react';
+import { FileText, Eye, Download, Zap, Trash2 } from 'lucide-react';
 import { useQuery } from 'react-query';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
@@ -23,12 +23,50 @@ const ReportsPage = () => {
     navigate(`/reports/${reportId}`);
   };
 
-  const handleDownloadReport = async (reportId) => {
+  const handleDeleteReport = async (reportId) => {
+    if (!window.confirm('Are you sure you want to delete this report? This action cannot be undone.')) {
+      return;
+    }
+
     try {
-      window.open(`/api/reports/${reportId}/download`, '_blank');
+      const res = await axios.delete(`/api/reports/${reportId}`);
+      toast.success(res.data.message);
+      refetch();
+    } catch (err) {
+      console.error('Delete failed', err);
+      toast.error(err.response?.data?.message || 'Failed to delete report');
+    }
+  };
+
+  const handleDownloadReport = async (reportId, format = 'pdf') => {
+    try {
+      const endpoint = format === 'pdf' ? `/api/reports/${reportId}/download` : `/api/reports/${reportId}/export/docx`;
+      const response = await axios.get(endpoint, {
+        responseType: 'blob'
+      });
+      
+      const file = new Blob([response.data], { type: response.headers['content-type'] });
+      const fileURL = URL.createObjectURL(file);
+      const link = document.createElement('a');
+      link.href = fileURL;
+      
+      const contentDisposition = response.headers['content-disposition'];
+      let fileName = `report-${reportId}.${format}`;
+      if (contentDisposition) {
+        const fileNameMatch = contentDisposition.match(/filename="(.+)"/);
+        if (fileNameMatch && fileNameMatch.length === 2) {
+          fileName = fileNameMatch[1];
+        }
+      }
+      
+      link.setAttribute('download', fileName);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      toast.success(`Report downloaded as ${format.toUpperCase()}`);
     } catch (err) {
       console.error('Error downloading report:', err);
-      toast.error('Failed to download report');
+      toast.error('Failed to download report. Please check if the report is ready.');
     }
   };
 
@@ -129,21 +167,39 @@ const ReportsPage = () => {
                         </td>
                         <td>
                           <div className="flex space-x-2">
-                            <button
+                             <button
                               className="text-primary-400 hover:text-primary-300"
                               onClick={() => handleViewReport(report._id)}
                               title="View Report"
                             >
                               <Eye className="h-4 w-4" />
                             </button>
-                            {report.status === 'completed' || report.status === 'finalized' ? (
+                            {report.status !== 'finalized' && (
                               <button
-                                className="text-primary-400 hover:text-primary-300"
-                                onClick={() => handleDownloadReport(report._id)}
-                                title="Download Report"
+                                className="text-red-400 hover:text-red-300"
+                                onClick={() => handleDeleteReport(report._id)}
+                                title="Delete Report"
                               >
-                                <Download className="h-4 w-4" />
+                                <Trash2 className="h-4 w-4" />
                               </button>
+                            )}
+                            {report.status === 'completed' || report.status === 'finalized' ? (
+                              <div className="flex space-x-1">
+                                <button
+                                  className="text-primary-400 hover:text-primary-300 p-1 rounded hover:bg-primary-500/10"
+                                  onClick={() => handleDownloadReport(report._id, 'pdf')}
+                                  title="Download PDF"
+                                >
+                                  <Download className="h-4 w-4" />
+                                </button>
+                                <button
+                                  className="text-primary-400 hover:text-primary-300 p-1 rounded hover:bg-primary-500/10"
+                                  onClick={() => handleDownloadReport(report._id, 'docx')}
+                                  title="Download DOCX"
+                                >
+                                  <FileText className="h-4 w-4" />
+                                </button>
+                              </div>
                             ) : null}
                           </div>
                         </td>

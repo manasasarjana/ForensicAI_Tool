@@ -135,12 +135,52 @@ const AuditLogsPage = () => {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-bold text-dark-100">Audit Logs</h1>
-        <p className="text-dark-300 mt-2">Monitor system activity and security events</p>
+        <h1 className="text-3xl font-bold text-dark-100 dark:text-dark-50 transition-colors">Audit Logs</h1>
+        <p className="text-dark-400 dark:text-dark-300 mt-2">Monitor system activity and security events</p>
+      </div>
+
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={handleResetFilters}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            !filters.action && !filters.resource
+            ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+            : 'bg-dark-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300 hover:bg-dark-200 dark:hover:bg-dark-700 border border-dark-200 dark:border-dark-600'
+          }`}
+        >
+          All Activity
+        </button>
+        <button
+          onClick={() => {
+            handleResetFilters();
+            handleFilterChange('action', 'login');
+          }}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            filters.action === 'login'
+            ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+            : 'bg-dark-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300 hover:bg-dark-200 dark:hover:bg-dark-700 border border-dark-200 dark:border-dark-600'
+          }`}
+        >
+          Logins Only
+        </button>
+        <button
+          onClick={() => {
+            handleResetFilters();
+            handleFilterChange('resource', 'case');
+          }}
+          className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+            filters.resource === 'case'
+            ? 'bg-primary-600 text-white shadow-lg shadow-primary-500/30'
+            : 'bg-dark-100 dark:bg-dark-800 text-dark-600 dark:text-dark-300 hover:bg-dark-200 dark:hover:bg-dark-700 border border-dark-200 dark:border-dark-600'
+          }`}
+        >
+          Case Operations
+        </button>
       </div>
 
       {/* Filters */}
-      <div className="bg-dark-700 rounded-lg p-6 border border-dark-600">
+      <div className="bg-white dark:bg-dark-800 rounded-lg p-6 border border-dark-200 dark:border-dark-600 shadow-sm transition-colors">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div>
             <label className="block text-sm font-medium text-dark-200 mb-2">Action</label>
@@ -258,7 +298,7 @@ const AuditLogsPage = () => {
             </div>
           </div>
 
-          <div className="bg-dark-700 rounded-lg border border-dark-600 overflow-hidden">
+          <div className="bg-white dark:bg-dark-800 rounded-lg border border-dark-200 dark:border-dark-600 overflow-hidden shadow-sm transition-colors">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-dark-600">
                 <thead className="bg-dark-600">

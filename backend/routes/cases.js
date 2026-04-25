@@ -28,7 +28,13 @@ router.get('/',
       // Apply filters
       if (status) query.status = status;
       if (priority) query.priority = priority;
-      if (investigator) query.investigator = investigator;
+
+      // Tenant Isolation: If not admin, FORCE query.investigator to their own ID
+      if (req.user.role !== 'admin') {
+        query.investigator = req.userId;
+      } else if (investigator) {
+        query.investigator = investigator;
+      }
 
       // Search functionality
       if (search) {
@@ -78,14 +84,19 @@ router.get('/stats/dashboard',
   auth,
   async (req, res) => {
     try {
-      // Show all cases and system-wide statistics to all users
+      // Filter by investigator if the user is not an admin
+      const isAdmin = req.user.role === 'admin';
+      const userFilter = isAdmin ? {} : { investigator: req.userId };
+      const evidenceFilter = isAdmin ? {} : { uploadedBy: req.userId };
+      const reportFilter = isAdmin ? {} : { generatedBy: req.userId };
+
       const stats = await Promise.all([
-        Case.countDocuments({ status: 'active' }),
-        Case.countDocuments({ status: 'closed' }),
-        Case.countDocuments({ status: 'archived' }),
-        Case.countDocuments({}),
-        Evidence.countDocuments({}),
-        Report.countDocuments({})
+        Case.countDocuments({ ...userFilter, status: 'active' }),
+        Case.countDocuments({ ...userFilter, status: 'closed' }),
+        Case.countDocuments({ ...userFilter, status: 'archived' }),
+        Case.countDocuments(userFilter),
+        Evidence.countDocuments(evidenceFilter),
+        Report.countDocuments(reportFilter)
       ]);
 
       // Get cases by month for the last 6 months
@@ -95,6 +106,7 @@ router.get('/stats/dashboard',
       const casesByMonth = await Case.aggregate([
         {
           $match: {
+            ...userFilter,
             createdAt: { $gte: sixMonthsAgo }
           }
         },
@@ -139,6 +151,11 @@ router.get('/:id',
 
       if (!caseData) {
         return res.status(404).json({ message: 'Case not found' });
+      }
+
+      // Tenant Isolation: verify investigator ownership
+      if (req.user.role !== 'admin' && caseData.investigator._id.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to view this case.' });
       }
 
       // Get related evidence and reports
@@ -191,32 +208,80 @@ router.post('/',
   }
 );
 
-module.exports = router;
-
-/*router.post('/',
+// Update case
+router.put('/:id',
   auth,
-  validate(caseSchema),
-  auditLogger('case_created', 'case'),
+  auditLogger('case_updated', 'case'),
   async (req, res) => {
     try {
+      // Find the case first to check ownership
+      const caseToUpdate = await Case.findById(req.params.id);
+      
+      if (!caseToUpdate) {
+        return res.status(404).json({ message: 'Case not found' });
+      }
 
-      const caseData = new Case({
-        caseId: "CF-" + Date.now(),   // 🔥 auto generate ID
-        ...req.body,
-        investigator: req.userId
-      });
+      // Tenant Isolation: verify investigator ownership
+      if (req.user.role !== 'admin' && caseToUpdate.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to modify this case.' });
+      }
 
-      await caseData.save();
-      await caseData.populate('investigator', 'username firstName lastName email');
+      const caseData = await Case.findByIdAndUpdate(
+        req.params.id,
+        { $set: req.body },
+        { new: true, runValidators: true }
+      ).populate('investigator', 'username firstName lastName email');
 
-      res.status(201).json({
-        message: 'Case created successfully',
+      res.json({
+        message: 'Case updated successfully',
         case: caseData
       });
 
     } catch (error) {
-      console.error('Create case error:', error);
-      res.status(500).json({ message: 'Server error creating case' });
+      console.error('Update case error:', error);
+      res.status(500).json({ message: 'Server error updating case' });
     }
   }
-);*/
+);
+
+// Close case
+router.put('/:id/close',
+  auth,
+  auditLogger('case_closed', 'case'),
+  async (req, res) => {
+    try {
+      const caseData = await Case.findById(req.params.id);
+
+      if (!caseData) {
+        return res.status(404).json({ message: 'Case not found' });
+      }
+
+      // Tenant Isolation: verify investigator ownership
+      if (req.user.role !== 'admin' && caseData.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to modify this case.' });
+      }
+
+      if (caseData.status === 'closed') {
+        return res.status(400).json({ message: 'Case is already closed' });
+      }
+
+      caseData.status = 'closed';
+      caseData.closedAt = new Date();
+      caseData.closedBy = req.userId;
+
+      await caseData.save();
+      await caseData.populate('investigator', 'username firstName lastName email');
+
+      res.json({
+        message: 'Case closed successfully',
+        case: caseData
+      });
+
+    } catch (error) {
+      console.error('Close case error:', error);
+      res.status(500).json({ message: 'Server error closing case' });
+    }
+  }
+);
+
+module.exports = router;

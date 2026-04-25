@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
+  darkMode: 'class',
   content: [
     "./src/**/*.{js,jsx,ts,tsx}",
   ],
@@ -21,17 +22,17 @@ module.exports = {
           900: '#312e81',
         },
         dark: {
-          50: '#fafafa',
-          100: '#f4f4f5', // Crisp White
-          200: '#e4e4e7',
-          300: '#d4d4d8',
-          400: '#a1a1aa', // Muted text
-          500: '#71717a',
-          600: '#52525b',
-          700: '#3f3f46', // Hover lines
-          800: '#27272a', // Zinc 800 (Card Surface)
-          900: '#18181b', // Zinc 900 
-          950: '#09090b', // Zinc 950 (Absolute Background)
+          50: 'rgb(var(--dark-50) / <alpha-value>)',
+          100: 'rgb(var(--dark-100) / <alpha-value>)',
+          200: 'rgb(var(--dark-200) / <alpha-value>)',
+          300: 'rgb(var(--dark-300) / <alpha-value>)',
+          400: 'rgb(var(--dark-400) / <alpha-value>)',
+          500: 'rgb(var(--dark-500) / <alpha-value>)',
+          600: 'rgb(var(--dark-600) / <alpha-value>)',
+          700: 'rgb(var(--dark-700) / <alpha-value>)',
+          800: 'rgb(var(--dark-800) / <alpha-value>)',
+          900: 'rgb(var(--dark-900) / <alpha-value>)',
+          950: 'rgb(var(--dark-950) / <alpha-value>)',
         }
       },
       fontFamily: {

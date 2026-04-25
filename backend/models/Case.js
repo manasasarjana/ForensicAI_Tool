@@ -51,6 +51,11 @@ const caseSchema = new mongoose.Schema({
   metadata: {
     type: Map,
     of: String
+  },
+  closedAt: Date,
+  closedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User'
   }
 }, {
   timestamps: true

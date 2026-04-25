@@ -3,11 +3,53 @@ const fs = require('fs');
 const path = require('path');
 const Evidence = require('../models/Evidence');
 const Case = require('../models/Case');
-const { auth, auditLogger } = require('../middleware/auth');
+const { auth, adminAuth, auditLogger } = require('../middleware/auth');
 const { upload, generateHashes, handleUploadError, generateFileHash } = require('../middleware/upload');
 const { validate, evidenceSchema } = require('../middleware/validation');
 
 const router = express.Router();
+
+// Get all evidence (admin only)
+router.get('/all',
+  auth,
+  async (req, res) => {
+    try {
+      if (req.user.role !== 'admin') {
+        return res.status(403).json({ message: 'Admin access required' });
+      }
+      
+      const { page = 1, limit = 50, sortBy = 'createdAt', sortOrder = 'desc' } = req.query;
+      
+      const options = {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        sort: { [sortBy]: sortOrder === 'desc' ? -1 : 1 }
+      };
+      
+      const evidence = await Evidence.find()
+        .populate('uploadedBy', 'username firstName lastName')
+        .populate('caseId', 'caseId title')
+        .sort(options.sort)
+        .limit(options.limit * 1)
+        .skip((options.page - 1) * options.limit);
+      
+      const total = await Evidence.countDocuments();
+      
+      res.json({
+        evidence,
+        pagination: {
+          current: options.page,
+          pages: Math.ceil(total / options.limit),
+          total
+        }
+      });
+      
+    } catch (error) {
+      console.error('Get all evidence error:', error);
+      res.status(500).json({ message: 'Server error fetching evidence' });
+    }
+  }
+);
 
 // Upload evidence files
 router.post('/upload',
@@ -28,6 +70,11 @@ router.post('/upload',
       const caseData = await Case.findById(caseId);
       if (!caseData) {
         return res.status(404).json({ message: 'Case not found' });
+      }
+
+      // Tenant Isolation: Verify investigator ownership
+      if (req.user.role !== 'admin' && caseData.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to add evidence to this case.' });
       }
       
       if (!req.files || req.files.length === 0) {
@@ -106,6 +153,11 @@ router.get('/case/:caseId',
       if (!caseData) {
         return res.status(404).json({ message: 'Case not found' });
       }
+
+      // Tenant Isolation: Verify investigator ownership
+      if (req.user.role !== 'admin' && caseData.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to view evidence for this case.' });
+      }
       
       const options = {
         page: parseInt(page),
@@ -151,6 +203,12 @@ router.get('/:id',
       if (!evidence) {
         return res.status(404).json({ message: 'Evidence not found' });
       }
+
+      // Tenant Isolation: Verify investigator ownership via populated case
+      const caseData = evidence.caseId; // It's populated
+      if (req.user.role !== 'admin' && caseData && caseData.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to view this evidence.' });
+      }
       
       // Add access to chain of custody
       evidence.chainOfCustody.push({
@@ -177,16 +235,33 @@ router.get('/:id/download',
   auth,
   async (req, res) => {
     try {
-      const evidence = await Evidence.findById(req.params.id);
+      const evidence = await Evidence.findById(req.params.id).populate('caseId');
       if (!evidence) {
         return res.status(404).json({ message: 'Evidence not found' });
       }
-      const filePath = evidence.filePath;
+
+      // Tenant Isolation: Verify investigator ownership
+      if (req.user.role !== 'admin' && evidence.caseId && evidence.caseId.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to download this evidence.' });
+      }
+      // Robust Path Resolution: Check stored path, then fallback to dynamic resolution
+      let filePath = evidence.filePath;
+      
       if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ message: 'File not found on server' });
+        // Fallback: Try resolving relative to current uploads directory
+        const fileName = evidence.fileName;
+        const fallbackPath = path.join(__dirname, '../uploads/evidence', fileName);
+        
+        if (fs.existsSync(fallbackPath)) {
+          filePath = fallbackPath;
+        } else {
+          console.error(`File NOT found. Stored: ${evidence.filePath}, Fallback: ${fallbackPath}`);
+          return res.status(404).json({ message: 'File not found on server' });
+        }
       }
       const inline = req.query.inline === 'true';
       if (inline) {
+        res.setHeader('Content-Type', evidence.fileType || 'application/octet-stream');
         res.setHeader('Content-Disposition', `inline; filename="${evidence.originalName}"`);
         res.sendFile(path.resolve(filePath));
       } else {
@@ -195,6 +270,138 @@ router.get('/:id/download',
     } catch (error) {
       console.error('Download error:', error);
       res.status(500).json({ message: 'Server error downloading file' });
+    }
+  }
+);
+
+// Verify evidence hash
+router.post('/:id/verify',
+  auth,
+  auditLogger('evidence_verified', 'evidence'),
+  async (req, res) => {
+    try {
+      const evidence = await Evidence.findById(req.params.id).populate('caseId');
+      
+      if (!evidence) {
+        return res.status(404).json({ message: 'Evidence not found' });
+      }
+
+      // Tenant Isolation: Verify investigator ownership
+      if (req.user.role !== 'admin' && evidence.caseId && evidence.caseId.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to verify this evidence.' });
+      }
+
+      if (!fs.existsSync(evidence.filePath)) {
+        return res.status(404).json({ message: 'File missing on server' });
+      }
+
+      // Re-calculate hash
+      const currentHash = await generateFileHash(evidence.filePath);
+      const isMatch = currentHash === evidence.sha256Hash;
+
+      evidence.isVerified = true;
+      evidence.verificationHistory.push({
+        verifiedBy: req.userId,
+        verifiedAt: new Date(),
+        hashMatch: isMatch,
+        notes: isMatch ? 'Hash verification successful' : 'HASH MISMATCH DETECTED!'
+      });
+
+      evidence.chainOfCustody.push({
+        action: 'verified',
+        performedBy: req.userId,
+        timestamp: new Date(),
+        notes: isMatch ? 'Integrity verified' : 'Integrity check failed'
+      });
+
+      await evidence.save();
+
+      res.json({
+        message: isMatch ? 'Integrity verified' : 'WARNING: Hash mismatch!',
+        verified: true,
+        match: isMatch
+      });
+
+    } catch (error) {
+      console.error('Verify evidence error:', error);
+      res.status(500).json({ message: 'Server error during verification' });
+    }
+  }
+);
+
+// Global verification
+router.post('/verify/all',
+  auth,
+  adminAuth,
+  async (req, res) => {
+    try {
+      const allEvidence = await Evidence.find();
+      let matches = 0;
+      let mismatches = 0;
+
+      for (const evidence of allEvidence) {
+        if (fs.existsSync(evidence.filePath)) {
+          const currentHash = await generateFileHash(evidence.filePath);
+          const isMatch = currentHash === evidence.sha256Hash;
+          
+          evidence.isVerified = true;
+          evidence.verificationHistory.push({
+            verifiedBy: req.userId,
+            verifiedAt: new Date(),
+            hashMatch: isMatch,
+            notes: 'Global batch verification'
+          });
+
+          if (isMatch) matches++;
+          else mismatches++;
+
+          await evidence.save();
+        }
+      }
+
+      res.json({
+        message: `Global verification complete. Matches: ${matches}, Mismatches: ${mismatches}`,
+        matches,
+        mismatches
+      });
+
+    } catch (error) {
+      console.error('Global verification error:', error);
+      res.status(500).json({ message: 'Server error during global verification' });
+    }
+  }
+);
+
+// Delete evidence
+router.delete('/:id',
+  auth,
+  auditLogger('evidence_deleted', 'evidence'),
+  async (req, res) => {
+    try {
+      const evidence = await Evidence.findById(req.params.id).populate('caseId');
+      
+      if (!evidence) {
+        return res.status(404).json({ message: 'Evidence not found' });
+      }
+
+      // Tenant Isolation: Verify investigator ownership
+      if (req.user.role !== 'admin' && evidence.caseId && evidence.caseId.investigator.toString() !== req.userId.toString()) {
+        return res.status(403).json({ message: 'Access denied: You do not have permission to delete this evidence.' });
+      }
+
+      // Delete file from filesystem
+      if (fs.existsSync(evidence.filePath)) {
+        fs.unlinkSync(evidence.filePath);
+      }
+
+      // Delete record from database
+      await Evidence.findByIdAndDelete(req.params.id);
+
+      res.json({ message: 'Evidence deleted successfully' });
+
+    } catch (error) {
+      console.error('Delete evidence error:', error);
+      res.status(500).json({ message: 'Server error deleting evidence' });
     }
   }
 );

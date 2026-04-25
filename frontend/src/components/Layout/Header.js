@@ -1,18 +1,58 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
-import { Menu, Bell, Search, CheckCircle, ShieldAlert, FileText, X } from 'lucide-react';
+import { useTheme } from '../../contexts/ThemeContext';
+import { Menu, Bell, Search, CheckCircle, ShieldAlert, FileText, X, Sun, Moon, Info } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from 'react-query';
+import axios from 'axios';
 
 const Header = ({ onMenuClick }) => {
   const { user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const [showNotifications, setShowNotifications] = useState(false);
   const navigate = useNavigate();
 
-  const notifications = [
-    { id: 1, title: 'Analysis Complete', message: 'Report CF-124 is ready for review.', time: '2m ago', unread: true, icon: FileText, color: 'text-blue-400', href: '/reports' },
-    { id: 2, title: 'Hash Verified', message: 'Evidence drive_img.dd integrity confirmed.', time: '1h ago', unread: true, icon: CheckCircle, color: 'text-green-400', href: '/evidence' },
-    { id: 3, title: 'System Warning', message: 'Failed login attempt from unknown IP.', time: '2h ago', unread: false, icon: ShieldAlert, color: 'text-yellow-400', href: '/audit' },
-  ];
+  const queryClient = useQueryClient();
+
+  const { data } = useQuery('notifications', async () => {
+    const res = await axios.get('/api/notifications');
+    return res.data;
+  }, {
+    refetchInterval: 10000 // Poll every 10 seconds
+  });
+
+  const markAsReadMutation = useMutation(
+    async (id) => {
+      await axios.put(`/api/notifications/${id}/read`);
+    },
+    {
+      onSuccess: () => {
+        queryClient.invalidateQueries('notifications');
+      }
+    }
+  );
+
+  const notifications = data?.notifications || [];
+  const unreadCount = data?.unreadCount || 0;
+
+  const getIcon = (type) => {
+    switch (type) {
+      case 'success': return CheckCircle;
+      case 'warning': return ShieldAlert;
+      case 'task_completed': return FileText;
+      default: return Info;
+    }
+  };
+
+  const getColor = (type) => {
+    switch (type) {
+      case 'success': return 'text-green-400';
+      case 'warning': return 'text-yellow-400';
+      case 'error': return 'text-red-400';
+      case 'task_completed': return 'text-blue-400';
+      default: return 'text-gray-400';
+    }
+  };
 
   return (
     <header className="bg-dark-800 border-b border-dark-700 px-4 py-3">
@@ -27,21 +67,32 @@ const Header = ({ onMenuClick }) => {
             <Menu className="h-5 w-5" />
           </button>
 
-          {/* Search bar */}
-          <div className="hidden md:block relative">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <Search className="h-5 w-5 text-dark-400" />
+          {/* Search bar - Hidden for admins as requested */}
+          {user?.role !== 'admin' && (
+            <div className="hidden md:block relative">
+              <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <Search className="h-5 w-5 text-dark-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search cases, evidence, reports..."
+                className="input-field pl-12 pr-4 py-2 w-96 rounded-lg bg-dark-800 border border-dark-600 focus:ring-2 focus:ring-primary-500 text-dark-100 placeholder-dark-400 transition-all font-medium"
+              />
             </div>
-            <input
-              type="text"
-              placeholder="Search cases, evidence, reports..."
-              className="input-field pl-12 pr-4 py-2 w-96 rounded-lg bg-dark-800 border border-dark-600 focus:ring-2 focus:ring-primary-500 text-dark-100 placeholder-dark-400 transition-all font-medium"
-            />
-          </div>
+          )}
         </div>
 
         {/* Right side */}
         <div className="flex items-center space-x-4">
+          {/* Theme Toggle */}
+          <button
+            onClick={toggleTheme}
+            className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700 transition-colors"
+            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+          >
+            {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+          </button>
+
           {/* Notifications */}
           <div className="relative">
             <button
@@ -49,7 +100,11 @@ const Header = ({ onMenuClick }) => {
               className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700 relative focus:outline-none"
             >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-500 rounded-full animate-pulse shadow-sm shadow-red-500/50"></span>
+              {unreadCount > 0 && (
+                <span className="absolute top-0 right-0 h-4 w-4 bg-red-500 rounded-full text-[10px] font-bold text-white flex items-center justify-center shadow-sm shadow-red-500/50">
+                  {unreadCount}
+                </span>
+              )}
             </button>
 
             {showNotifications && (
@@ -61,29 +116,34 @@ const Header = ({ onMenuClick }) => {
                   </button>
                 </div>
                 <div className="max-h-80 overflow-y-auto">
-                  {notifications.map((notif) => {
-                    const Icon = notif.icon;
+                  {notifications.length > 0 ? notifications.map((notif) => {
+                    const IconComponent = getIcon(notif.type);
                     return (
                       <div
-                        key={notif.id}
+                        key={notif._id}
                         onClick={() => {
+                          if (!notif.isRead) markAsReadMutation.mutate(notif._id);
                           setShowNotifications(false);
-                          navigate(notif.href);
+                          if (notif.actionUrl) navigate(notif.actionUrl);
                         }}
-                        className={`p-4 border-b border-dark-700 hover:bg-dark-700 transition-colors cursor-pointer flex items-start gap-3 ${notif.unread ? 'bg-primary-900/10' : ''}`}
+                        className={`p-4 border-b border-dark-700 hover:bg-dark-700 transition-colors cursor-pointer flex items-start gap-3 ${!notif.isRead ? 'bg-primary-900/10' : ''}`}
                       >
-                        <div className={`mt-0.5 rounded-full p-2 bg-dark-900 border border-dark-600 shadow-sm ${notif.color}`}>
-                          <Icon className="h-4 w-4" />
+                        <div className={`mt-0.5 rounded-full p-2 bg-dark-900 border border-dark-600 shadow-sm ${getColor(notif.type)}`}>
+                          <IconComponent className="h-4 w-4" />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-dark-100 truncate">{notif.title}</p>
                           <p className="text-xs text-dark-300 mt-1 line-clamp-2">{notif.message}</p>
-                          <p className="text-xs text-dark-500 mt-1 font-mono">{notif.time}</p>
+                          <p className="text-xs text-dark-500 mt-1 font-mono">{new Date(notif.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
                         </div>
-                        {notif.unread && <div className="h-2 w-2 bg-primary-500 rounded-full mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>}
+                        {!notif.isRead && <div className="h-2 w-2 bg-primary-500 rounded-full mt-1.5 flex-shrink-0 shadow-[0_0_8px_rgba(99,102,241,0.6)]"></div>}
                       </div>
                     );
-                  })}
+                  }) : (
+                    <div className="p-6 text-center text-dark-400 text-sm">
+                      No new notifications
+                    </div>
+                  )}
                 </div>
                 <div
                   className="p-3 text-center border-t border-dark-700 bg-dark-900/30 hover:bg-dark-800 transition-colors cursor-pointer"

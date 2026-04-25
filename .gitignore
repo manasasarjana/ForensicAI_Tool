@@ -5,3 +5,12 @@ dist/
 build/
 coverage/
 .vscode/
+
+# Project specific
+datasets/
+test-evidence/
+backend/uploads/
+.codex/
+Diagrams/
+test-setup.js
+analyze_template.py

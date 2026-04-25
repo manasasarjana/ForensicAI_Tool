@@ -4,7 +4,12 @@ const AuditLog = require('../models/AuditLog');
 
 const auth = async (req, res, next) => {
   try {
-    const token = req.header('Authorization')?.replace('Bearer ', '');
+    let token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    // Accept token from query parameter for direct browser streaming (like iframes)
+    if (!token && req.query.token) {
+      token = req.query.token;
+    }
     
     if (!token) {
       return res.status(401).json({ message: 'No token, authorization denied' });
@@ -26,17 +31,11 @@ const auth = async (req, res, next) => {
   }
 };
 
-const adminAuth = async (req, res, next) => {
-  try {
-    await auth(req, res, () => {
-      if (req.user.role !== 'admin') {
-        return res.status(403).json({ message: 'Admin access required' });
-      }
-      next();
-    });
-  } catch (error) {
-    res.status(403).json({ message: 'Admin access required' });
+const adminAuth = (req, res, next) => {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
   }
+  next();
 };
 
 const auditLogger = (action, resource = null) => {

@@ -37,17 +37,17 @@ const loginSchema = Joi.object({
 // Case validation schemas
 const caseSchema = Joi.object({
   title: Joi.string().min(5).max(200).required(),
-  description: Joi.string().max(1000).optional(),
+  description: Joi.string().max(1000).optional().allow(''),
   incidentDate: Joi.date().required(),
-  location: Joi.string().max(200).optional(),
+  location: Joi.string().max(200).optional().allow(''),
   priority: Joi.string().valid('low', 'medium', 'high', 'critical').optional(),
   suspects: Joi.array().items(Joi.object({
     name: Joi.string().required(),
-    details: Joi.string().optional()
+    details: Joi.string().optional().allow('')
   })).optional(),
   victims: Joi.array().items(Joi.object({
     name: Joi.string().required(),
-    details: Joi.string().optional()
+    details: Joi.string().optional().allow('')
   })).optional(),
   tags: Joi.array().items(Joi.string()).optional()
 });

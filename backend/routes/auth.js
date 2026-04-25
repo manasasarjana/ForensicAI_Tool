@@ -2,9 +2,14 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Case = require('../models/Case');
+const Evidence = require('../models/Evidence');
+const Report = require('../models/Report');
+const Notification = require('../models/Notification');
 const AuditLog = require('../models/AuditLog');
+const fs = require('fs');
+const path = require('path');
 const { validate, registerSchema, loginSchema } = require('../middleware/validation');
-const { auth, auditLogger } = require('../middleware/auth');
+const { auth, adminAuth, auditLogger } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -458,6 +463,102 @@ router.put('/change-password',
     } catch (error) {
       console.error('Password change error:', error);
       res.status(500).json({ message: 'Server error during password change' });
+    }
+  }
+);
+
+// Get all users (Admin only)
+router.get('/users',
+  auth, adminAuth,
+  async (req, res) => {
+    try {
+      // Select all fields except password
+      const users = await User.find().select('-password').sort({ createdAt: -1 });
+      res.json({ users });
+    } catch (error) {
+      console.error('Get all users error:', error);
+      res.status(500).json({ message: 'Server error fetching users' });
+    }
+  }
+);
+
+// Delete user (Admin only)
+router.delete('/users/:id',
+  auth, adminAuth,
+  async (req, res) => {
+    try {
+      const userId = req.params.id;
+      
+      // Prevent deleting self
+      if (userId === req.userId.toString()) {
+        return res.status(400).json({ message: 'Cannot delete your own admin account' });
+      }
+
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      // --- CASCADING DELETION ---
+      
+      // 1. Find all cases created by this user
+      const userCases = await Case.find({ investigator: userId });
+      const caseIds = userCases.map(c => c._id);
+
+      // 2. Cleanup Evidence and Files for these cases
+      const evidenceList = await Evidence.find({ caseId: { $in: caseIds } });
+      for (const evidence of evidenceList) {
+        if (evidence.filePath && fs.existsSync(evidence.filePath)) {
+          try {
+            fs.unlinkSync(evidence.filePath);
+          } catch (err) {
+            console.error(`Failed to delete evidence file: ${evidence.filePath}`, err);
+          }
+        }
+      }
+      await Evidence.deleteMany({ caseId: { $in: caseIds } });
+
+      // 3. Cleanup Reports and Exported Files for these cases
+      const reportsList = await Report.find({ caseId: { $in: caseIds } });
+      for (const report of reportsList) {
+        if (report.exports && report.exports.length > 0) {
+          for (const exp of report.exports) {
+            if (exp.filePath && fs.existsSync(exp.filePath)) {
+              try {
+                fs.unlinkSync(exp.filePath);
+              } catch (err) {
+                console.error(`Failed to delete report export: ${exp.filePath}`, err);
+              }
+            }
+          }
+        }
+      }
+      await Report.deleteMany({ caseId: { $in: caseIds } });
+
+      // 4. Delete the cases
+      await Case.deleteMany({ investigator: userId });
+
+      // 5. Delete notifications for the user
+      await Notification.deleteMany({ userId });
+
+      // 6. Finally delete the user
+      await User.findByIdAndDelete(userId);
+
+      // Log the deletion
+      console.log(`User ${user.email} and all their ${userCases.length} cases deleted by Admin ${req.userId}`);
+
+      res.json({ 
+        message: 'User and all associated cases, evidence, and reports deleted successfully',
+        details: {
+          userDeleted: user.email,
+          casesDeleted: userCases.length,
+          evidenceDeleted: evidenceList.length,
+          reportsDeleted: reportsList.length
+        }
+      });
+    } catch (error) {
+      console.error('Delete user error:', error);
+      res.status(500).json({ message: 'Server error during cascading user deletion' });
     }
   }
 );

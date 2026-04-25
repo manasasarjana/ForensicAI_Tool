@@ -6,7 +6,6 @@ import {
   FolderOpen,
   FileText,
   Upload,
-  BarChart3,
   Shield,
   User,
   LogOut,
@@ -19,11 +18,16 @@ const Sidebar = ({ isOpen, onClose }) => {
   const location = useLocation();
 
   const investigatorNavigation = [
-    { name: 'Dashboard', href: '/dashboard', icon: Home },
+    { name: 'My Workspace', href: '/dashboard', icon: Home },
     { name: 'Cases', href: '/cases', icon: FolderOpen },
     { name: 'Evidence', href: '/evidence', icon: Upload },
     { name: 'Reports', href: '/reports', icon: FileText },
     { name: 'Audit Logs', href: '/audit', icon: Shield },
+    { name: 'Profile', href: '/profile', icon: User },
+  ];
+
+  const analystNavigation = [
+    { name: 'Audit Workspace', href: '/analyst', icon: FileText },
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
@@ -32,7 +36,11 @@ const Sidebar = ({ isOpen, onClose }) => {
     { name: 'Profile', href: '/profile', icon: User },
   ];
 
-  const navigation = user?.role === 'admin' ? adminNavigation : investigatorNavigation;
+  const navigation = user?.role === 'admin' 
+    ? adminNavigation 
+    : user?.role === 'analyst' 
+      ? analystNavigation 
+      : investigatorNavigation;
 
   const handleLogout = async () => {
     await logout();
@@ -51,11 +59,11 @@ const Sidebar = ({ isOpen, onClose }) => {
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-primary-600/20 rounded-full blur-3xl group-hover:bg-primary-500/30 transition-all duration-700"></div>
               <Shield className="h-10 w-10 text-primary-400 drop-shadow-md relative z-10 transform group-hover:scale-110 transition-transform duration-500" />
               <div className="ml-3 flex flex-col relative z-10 mt-1">
-                <span className="text-2xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-dark-200 uppercase leading-none">
-                  NEXUS
+                <span className="text-xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-white to-dark-200 uppercase leading-none">
+                  DIGITAL
                 </span>
                 <span className="text-[0.65rem] font-bold tracking-[0.3em] text-primary-400 uppercase mt-1 pl-1">
-                  Forensic AI
+                  Forensics AI
                 </span>
               </div>
             </Link>

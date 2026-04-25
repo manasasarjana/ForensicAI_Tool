@@ -75,7 +75,7 @@ const LoginPage = () => {
           <Shield className="h-12 w-12 text-primary-500" />
         </Link>
         <h2 className="mt-6 text-center text-3xl font-bold text-dark-100">
-          Sign in to ForensicsAI
+          Sign in to DigitalForensics
         </h2>
         <p className="mt-2 text-center text-sm text-dark-400">
           Access your digital forensics platform
@@ -191,7 +191,7 @@ const LoginPage = () => {
                 <div className="w-full border-t border-dark-600" />
               </div>
               <div className="relative flex justify-center text-sm">
-                <span className="px-2 bg-dark-800 text-dark-400">New to ForensicsAI?</span>
+                <span className="px-2 bg-dark-800 text-dark-400">New to DigitalForensics?</span>
               </div>
             </div>
 

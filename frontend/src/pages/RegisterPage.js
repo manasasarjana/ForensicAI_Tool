@@ -314,7 +314,6 @@ const RegisterPage = () => {
                   className="input-field"
                 >
                   <option value="investigator">Investigator</option>
-                  <option value="admin">Administrator</option>
                 </select>
               </div>
             </div>

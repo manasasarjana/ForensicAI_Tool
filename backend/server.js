@@ -16,6 +16,13 @@ app.set('trust proxy', 1);
 // Security middleware
 app.use(helmet({
   crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      frameAncestors: ["'self'", "http://localhost:3000"], // Allow frontend to embed in iframes
+    },
+  },
+  frameguard: false, // Disable X-Frame-Options header
 }));
 
 app.use(cors({
@@ -25,14 +32,14 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Rate limiting
-const limiter = rateLimit({
+// Rate limiting - Disabled for development to prevent lockout loops
+/*const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 1000, // Increased for development
   standardHeaders: true,
   legacyHeaders: false,
 });
-app.use(limiter);
+app.use(limiter);*/
 
 // Body parsing middleware
 app.use(express.json({ limit: '50mb' }));
@@ -52,6 +59,7 @@ const casesRoutes = require('./routes/cases');
 const evidenceRoutes = require('./routes/evidence');
 const reportsRoutes = require('./routes/reports');
 const auditRoutes = require('./routes/audit');
+const notificationsRoutes = require('./routes/notifications');
 
 // Use routes
 app.use('/api/auth', authRoutes);
@@ -59,6 +67,10 @@ app.use('/api/cases', casesRoutes);
 app.use('/api/evidence', evidenceRoutes);
 app.use('/api/reports', reportsRoutes);
 app.use('/api/audit', auditRoutes);
+app.use('/api/notifications', notificationsRoutes);
+
+// Initialize Background Workers
+require('./workers/reportWorker');
 
 // Health check
 app.get('/api/health', (req, res) => {

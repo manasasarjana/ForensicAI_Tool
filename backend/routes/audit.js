@@ -100,7 +100,7 @@ router.get('/user/:userId?',
 
 // Get system activity summary (admin only)
 router.get('/system/summary',
-  adminAuth,
+  auth, adminAuth,
   async (req, res) => {
     try {
       const { dateFrom, dateTo } = req.query;
@@ -211,7 +211,7 @@ router.get('/system/summary',
 
 // Get security events (admin only)
 router.get('/security',
-  adminAuth,
+  auth, adminAuth,
   async (req, res) => {
     try {
       const { limit = 100 } = req.query;
@@ -279,7 +279,7 @@ router.get('/login-history/:userId?',
 
 // Export audit logs (admin only)
 router.get('/export',
-  adminAuth,
+  auth, adminAuth,
   async (req, res) => {
     try {
       const {

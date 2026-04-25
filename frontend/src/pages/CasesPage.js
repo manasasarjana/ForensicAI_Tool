@@ -31,25 +31,6 @@ const CasesPage = () => {
     }
   );
 
-  const getStatusBadge = (status) => {
-    const badges = {
-      active: 'bg-green-100 text-green-800',
-      closed: 'bg-gray-100 text-gray-800',
-      archived: 'bg-blue-100 text-blue-800'
-    };
-    return `status-badge ${badges[status] || badges.active}`;
-  };
-
-  const getPriorityBadge = (priority) => {
-    const badges = {
-      low: 'bg-gray-100 text-gray-800',
-      medium: 'bg-yellow-100 text-yellow-800',
-      high: 'bg-orange-100 text-orange-800',
-      critical: 'bg-red-100 text-red-800'
-    };
-    return `status-badge ${badges[priority] || badges.medium}`;
-  };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -81,9 +62,8 @@ const CasesPage = () => {
       </div>
 
       {/* Filters */}
-      <div className="card">
-        <div className="card-body">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="bg-dark-800/40 backdrop-blur border border-dark-700/50 rounded-xl p-4 shadow-lg mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-dark-400" />
               <input
@@ -123,77 +103,85 @@ const CasesPage = () => {
               More Filters
             </button>
           </div>
-        </div>
       </div>
 
       {/* Cases Table */}
-      <div className="table-container">
-        <table className="table">
-          <thead className="table-header">
-            <tr>
-              <th>Case ID</th>
+      <div className="bg-dark-800/40 backdrop-blur border border-dark-700 rounded-xl overflow-hidden shadow-lg">
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-sm">
+            <thead className="bg-dark-900/50 text-dark-400 text-xs uppercase tracking-wider border-b border-dark-700">
+              <tr>
+                <th className="p-4 font-medium">Case ID</th>
               <th>Title</th>
               <th>Status</th>
               <th>Priority</th>
               <th>Investigator</th>
               <th>Created</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody className="table-body">
-            {data?.cases?.map((caseItem) => (
-              <tr key={caseItem._id}>
-                <td>
-                  <span className="font-mono text-sm">{caseItem.caseId}</span>
-                </td>
-                <td>
-                  <div>
-                    <p className="font-medium text-dark-100">{caseItem.title}</p>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-white/10">
+              {data?.cases?.map((caseItem) => (
+                <tr key={caseItem._id} className="hover:bg-white/5 transition-colors">
+                  <td className="p-4">
+                  <span className="font-mono text-sm text-primary-400">{caseItem.caseId}</span>
+                  </td>
+                  <td className="p-4">
+                    <div>
+                      <p className="font-bold text-white">{caseItem.title}</p>
                     {caseItem.description && (
                       <p className="text-sm text-dark-400 truncate max-w-xs">
                         {caseItem.description}
                       </p>
                     )}
                   </div>
-                </td>
-                <td>
-                  <span className={getStatusBadge(caseItem.status)}>
-                    {caseItem.status}
-                  </span>
-                </td>
-                <td>
-                  <span className={getPriorityBadge(caseItem.priority)}>
-                    {caseItem.priority}
-                  </span>
-                </td>
-                <td>
+                  </td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-widest rounded shadow-sm ${
+                      caseItem.status === 'active' ? 'bg-green-500/20 text-green-400 border border-green-500/30' :
+                      caseItem.status === 'closed' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                      'bg-blue-500/20 text-blue-400 border border-blue-500/30'
+                    }`}>
+                      {caseItem.status}
+                    </span>
+                  </td>
+                  <td className="p-4">
+                    <span className={`px-2 py-1 text-[10px] uppercase font-bold tracking-widest rounded shadow-sm ${
+                      caseItem.priority === 'critical' ? 'bg-red-500/20 text-red-400 border border-red-500/30' :
+                      caseItem.priority === 'high' ? 'bg-orange-500/20 text-orange-400 border border-orange-500/30' :
+                      'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
+                    }`}>
+                      {caseItem.priority}
+                    </span>
+                  </td>
+                  <td className="p-4">
                   <div className="flex items-center">
                     <User className="h-4 w-4 text-dark-400 mr-2" />
-                    <span className="text-sm">
-                      {caseItem.investigator.firstName} {caseItem.investigator.lastName}
-                    </span>
-                  </div>
-                </td>
-                <td>
-                  <div className="flex items-center text-sm text-dark-400">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <span className="text-sm text-dark-200">
+                      {caseItem.investigator ? `${caseItem.investigator.firstName} ${caseItem.investigator.lastName}` : 'Unknown Investigator'}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="p-4">
+                    <div className="flex items-center text-xs text-dark-400 font-mono">
+                      <Calendar className="h-3 w-3 mr-1" />
                     {new Date(caseItem.createdAt).toLocaleDateString()}
-                  </div>
-                </td>
-                <td>
-                  <Link
-                    to={`/cases/${caseItem._id}`}
-                    className="inline-flex items-center text-primary-400 hover:text-primary-300"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    View
-                  </Link>
-                </td>
-              </tr>
+                    </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <Link
+                      to={`/cases/${caseItem._id}`}
+                      className="text-primary-400 hover:text-primary-300 p-2 hover:bg-primary-900/20 rounded transition-colors inline-block"
+                      title="Inspect Case"
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Link>
+                  </td>
+                </tr>
             ))}
-          </tbody>
-        </table>
-      </div>
+              </tbody>
+            </table>
+          </div>
+        </div>
 
       {/* Pagination */}
       {data?.pagination && data.pagination.pages > 1 && (

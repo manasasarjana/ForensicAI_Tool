@@ -11,14 +11,46 @@
   box-sizing: border-box;
 }
 
+:root {
+  /* LIGHT MODE MAP - Reverses the palette so "dark" classes act as light */
+  /* hex: #020617 */ --dark-50: 2 6 23;
+  /* hex: #0f172a */ --dark-100: 15 23 42;
+  /* hex: #1e293b */ --dark-200: 30 41 59;
+  /* hex: #334155 */ --dark-300: 51 65 85;
+  /* hex: #64748b */ --dark-400: 100 116 139;
+  /* hex: #94a3b8 */ --dark-500: 148 163 184;
+  /* hex: #cbd5e1 */ --dark-600: 203 213 225;
+  /* hex: #e2e8f0 */ --dark-700: 226 232 240;
+  /* hex: #ffffff */ --dark-800: 255 255 255;
+  /* hex: #f8fafc */ --dark-900: 248 250 252;
+  /* hex: #f1f5f9 */ --dark-950: 241 245 249;
+}
+
+.dark {
+  /* DARK MODE MAP - The original dark colors */
+  /* hex: #fafafa */ --dark-50: 250 250 250;
+  /* hex: #f4f4f5 */ --dark-100: 244 244 245; 
+  /* hex: #e4e4e7 */ --dark-200: 228 228 231;
+  /* hex: #d4d4d8 */ --dark-300: 212 212 216;
+  /* hex: #a1a1aa */ --dark-400: 161 161 170; 
+  /* hex: #71717a */ --dark-500: 113 113 122;
+  /* hex: #52525b */ --dark-600: 82 82 91;
+  /* hex: #3f3f46 */ --dark-700: 63 63 70; 
+  /* hex: #27272a */ --dark-800: 39 39 42; 
+  /* hex: #18181b */ --dark-900: 24 24 27; 
+  /* hex: #09090b */ --dark-950: 9 9 11; 
+}
+
+
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #09090b;
-  color: #f4f4f5;
+  background-color: rgb(var(--dark-950));
+  color: rgb(var(--dark-100));
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 code {
@@ -31,16 +63,16 @@ code {
 }
 
 ::-webkit-scrollbar-track {
-  background: #09090b;
+  background: rgb(var(--dark-950));
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #27272a;
+  background: rgb(var(--dark-800));
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #3f3f46;
+  background: rgb(var(--dark-700));
 }
 
 /* Custom components */
@@ -89,7 +121,7 @@ code {
 }
 
 .table-header {
-  @apply bg-[#09090b];
+  @apply bg-dark-950;
 }
 
 .table-header th {
