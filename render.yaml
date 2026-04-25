@@ -1,4 +1,8 @@
 services:
+  - type: redis
+    name: digital-forensics-redis
+    plan: free
+    ipAllowList: []
   - type: web
     name: digital-forensics
     env: node
@@ -6,6 +10,11 @@ services:
     buildCommand: npm install && npm run build
     startCommand: npm start
     envVars:
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: digital-forensics-redis
+          property: connectionString
       - key: NODE_ENV
         value: production
       - key: PORT
