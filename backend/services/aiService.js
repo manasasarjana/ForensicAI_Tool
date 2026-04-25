@@ -7,13 +7,13 @@ const groq = new Groq({
 async function generateAIReport(caseData, evidence) {
 
   const evidenceSummary = evidence
-    .map(e => e.title || e.type || "Digital Artifact")
-    .join(", ");
+    .map((e, index) => `${index + 1}. [${e.createdAt.toISOString()}] ${e.originalName} (${e.fileType}) - ${e.description || "No description provided"}`)
+    .join("\n");
 
   const prompt = `
 You are a certified digital forensic investigator writing an official digital forensic investigation report.
 
-Generate a highly detailed and professional investigation report.
+Generate a highly detailed and professional investigation report based on the evidence provided.
 
 The report must contain the following sections:
 
@@ -39,69 +39,42 @@ CASE INFORMATION
 
 Case ID: ${caseData.caseId}
 Case Title: ${caseData.title}
+Case Description: ${caseData.description || "N/A"}
+Incident Date: ${caseData.incidentDate ? caseData.incidentDate.toISOString() : "Unknown"}
 
-Evidence Collected:
+EVIDENCE DATA (USE THIS TO GENERATE THE TIMELINE AND ANALYSIS):
 ${evidenceSummary}
 
 REPORT WRITING INSTRUCTIONS
 
 Executive Summary:
-Write a detailed summary explaining:
-- why the investigation started
-- how suspicious activity was detected
-- investigation objectives
-- importance of digital forensic analysis
-Write at least 2–3 well developed paragraphs.
+Write a detailed summary explaining why the investigation started and the main objectives.
 
 Incident Overview:
-Describe:
-- affected device
-- operating system
-- corporate network environment
-- how incident was discovered
-- potential risk to company systems
-Write 2–3 detailed paragraphs.
+Describe the incident environment and how it was discovered.
 
 Evidence Summary:
-Explain the types of evidence collected including:
-- suspicious files
-- browser artifacts
-- registry entries
-- network logs
-- email artifacts
-Explain the importance of each artifact in the investigation.
+Detail the collected artifacts and their relevance.
 
 Technical Findings:
-Provide deep technical analysis including:
-- suspicious executable file behavior
-- browser activity involving unknown websites
-- communication with external IP addresses
-- registry persistence mechanisms
-- possible malware behavior such as command-and-control communication
-Write multiple paragraphs describing these findings.
+Provide deep technical analysis of the findings derived from the evidence listed above.
 
 Timeline:
-Provide chronological events in this exact format:
+Generate a CHRONOLOGICAL timeline based on the actual "Evidence Data" timestamps provided above.
+Each line should start with the HH:MM:SS format.
+DO NOT use the example below as literal data. USE THE ACTUAL TIMESTAMPS FROM THE EVIDENCE LIST.
 
-21:58:02 Suspicious email received with attachment
-22:05:17 User visited suspicious portal
-22:09:41 File download page accessed
-22:12:33 Network connection established to external server
-22:14:08 Suspicious file created on system
+Example Format:
+HH:MM:SS Description of the forensic event related to the evidence item
 
 Conclusion:
-Summarize the investigation results and include:
-- security risks identified
-- impact on organization
-- recommendations for preventing future attacks
-- employee awareness and security monitoring improvements
+Summarize results and provide security recommendations.
 
 IMPORTANT RULES
 
 Return ONLY valid JSON.
-Do not include markdown.
-Do not include explanations outside JSON.
-Do not wrap JSON inside backticks.
+Do not include markdown or backticks.
+The Timeline section MUST reflect the actual evidence timestamps provided.
 `;
 
   const start = Date.now();
