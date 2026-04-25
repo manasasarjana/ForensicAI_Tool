@@ -69,7 +69,7 @@ const CaseDetailsPage = () => {
       return;
     }
     const token = localStorage.getItem('accessToken');
-    const baseUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const baseUrl = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
     setPreviewUrl(`${baseUrl}/api/evidence/${fileId}/download?inline=true&token=${token}`);
   };
 

@@ -19,7 +19,7 @@ export const AuthProvider = ({ children }) => {
   // Configure axios defaults
   useEffect(() => {
     // Set base URL for axios
-    const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3001';
+    const apiUrl = process.env.REACT_APP_API_URL || (window.location.hostname === 'localhost' ? 'http://localhost:3001' : '');
     axios.defaults.baseURL = apiUrl;
     console.log('API Base URL configured:', apiUrl);
     
