@@ -55,14 +55,14 @@ const Header = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-dark-800 border-b border-dark-700 px-4 py-3">
+    <header className="bg-dark-800/40 backdrop-blur-md border-b border-dark-700/50 px-4 py-3 sticky top-0 z-40 transition-all duration-300">
       <div className="flex items-center justify-between">
         {/* Left side */}
         <div className="flex items-center">
           {/* Mobile menu button */}
           <button
             onClick={onMenuClick}
-            className="lg:hidden p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700 mr-2"
+            className="lg:hidden p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700/50 mr-2"
           >
             <Menu className="h-5 w-5" />
           </button>
@@ -76,7 +76,7 @@ const Header = ({ onMenuClick }) => {
               <input
                 type="text"
                 placeholder="Search cases, evidence, reports..."
-                className="input-field pl-12 pr-4 py-2 w-96 rounded-lg bg-dark-800 border border-dark-600 focus:ring-2 focus:ring-primary-500 text-dark-100 placeholder-dark-400 transition-all font-medium"
+                className="input-field pl-12 pr-4 w-96 font-medium"
               />
             </div>
           )}
@@ -87,7 +87,7 @@ const Header = ({ onMenuClick }) => {
           {/* Theme Toggle */}
           <button
             onClick={toggleTheme}
-            className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700 transition-colors"
+            className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700/50 transition-colors"
             title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
           >
             {theme === 'dark' ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -97,7 +97,7 @@ const Header = ({ onMenuClick }) => {
           <div className="relative">
             <button
               onClick={() => setShowNotifications(!showNotifications)}
-              className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700 relative focus:outline-none"
+              className="p-2 rounded-md text-dark-400 hover:text-dark-100 hover:bg-dark-700/50 relative focus:outline-none"
             >
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
@@ -108,8 +108,8 @@ const Header = ({ onMenuClick }) => {
             </button>
 
             {showNotifications && (
-              <div className="absolute right-0 mt-3 w-80 bg-dark-800/95 backdrop-blur-md rounded-xl shadow-2xl border border-dark-600 z-50 overflow-hidden text-left origin-top-right transition-all">
-                <div className="flex justify-between items-center px-4 py-3 border-b border-dark-700 bg-dark-900/50">
+              <div className="absolute right-0 mt-3 w-80 bg-dark-800/60 backdrop-blur-lg rounded-2xl shadow-2xl border border-dark-700/50 z-50 overflow-hidden text-left origin-top-right transition-all duration-300">
+                <div className="flex justify-between items-center px-4 py-3 border-b border-dark-700 bg-dark-900/40">
                   <h3 className="text-sm font-semibold text-dark-100">Recent Alerts</h3>
                   <button onClick={() => setShowNotifications(false)} className="text-dark-400 hover:text-dark-100 transition-colors">
                     <X className="h-4 w-4" />

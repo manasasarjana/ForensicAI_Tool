@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { ShieldAlert, Eye, EyeOff } from 'lucide-react';
@@ -6,6 +6,14 @@ import LoadingSpinner from '../components/UI/LoadingSpinner';
 import { toast } from 'react-toastify';
 
 const AdminLoginPage = () => {
+  const particles = useMemo(() => {
+    return Array.from({ length: 10 }).map((_, i) => ({
+      left: Math.random() * 100,
+      size: Math.random() * 40 + 10,
+      delay: Math.random() * 15,
+      duration: Math.random() * 15 + 12,
+    }));
+  }, []);
   const [formData, setFormData] = useState({
     email: '',
     password: ''
@@ -77,12 +85,37 @@ const AdminLoginPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-dark-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-gradient-to-b from-dark-900 to-red-950/20">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
+    <div className="min-h-screen bg-transparent flex flex-col justify-center py-6 sm:px-6 lg:px-8 bg-gradient-to-b from-transparent to-red-950/10 relative overflow-hidden">
+      {/* Floating Background Blobs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none z-0">
+        <div className="absolute top-[15%] left-[5%] w-80 h-80 bg-red-600/10 rounded-full blur-[90px] animate-blob-1"></div>
+        <div className="absolute bottom-[15%] right-[5%] w-96 h-96 bg-dark-800/20 rounded-full blur-[100px] animate-blob-2"></div>
+        
+        {/* Floating Particles / Bubbles */}
+        {particles.map((p, i) => (
+          <div
+            key={i}
+            className="absolute rounded-full"
+            style={{
+              left: `${p.left}%`,
+              width: `${p.size}px`,
+              height: `${p.size}px`,
+              bottom: '-100px',
+              background: 'radial-gradient(circle, rgba(239, 68, 68, 0.1) 0%, rgba(239, 68, 68, 0) 70%)',
+              border: '1px solid rgba(239, 68, 68, 0.05)',
+              animation: `floatUp ${p.duration}s infinite linear`,
+              animationDelay: `${p.delay}s`,
+            }}
+          />
+        ))}
+      </div>
+
+      <div className="relative z-10">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-up">
         <div className="flex justify-center">
-          <ShieldAlert className="h-14 w-14 text-red-500" />
+          <ShieldAlert className="h-14 w-14 text-red-500 animate-float" />
         </div>
-        <h2 className="mt-6 text-center text-3xl font-bold text-dark-100">
+        <h2 className="mt-4 text-center text-3xl font-bold text-dark-100">
           Administrator Access
         </h2>
         <p className="mt-2 text-center text-sm text-red-400 font-medium">
@@ -90,9 +123,9 @@ const AdminLoginPage = () => {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="card py-8 px-4 shadow-xl shadow-red-900/10 border-t-4 border-t-red-600 sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
+      <div className="mt-4 sm:mx-auto sm:w-full sm:max-w-md animate-fade-in-up delay-100">
+        <div className="card py-6 px-6 border-t-4 border-t-red-600 sm:px-8">
+          <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-dark-200">
                 Admin Email Address
@@ -184,6 +217,7 @@ const AdminLoginPage = () => {
             </div>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

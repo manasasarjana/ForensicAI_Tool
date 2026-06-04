@@ -25,7 +25,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-dark-900 flex items-center justify-center">
+      <div className="min-h-screen bg-transparent flex items-center justify-center">
         <LoadingSpinner size="large" />
       </div>
     );
@@ -33,7 +33,7 @@ function App() {
 
   return (
     <ThemeProvider>
-      <div className="min-h-screen bg-dark-900 dark:bg-dark-950 transition-colors duration-300">
+      <div className="min-h-screen bg-transparent transition-colors duration-300">
         <Routes>
           {/* Public routes */ }
           <Route path="/" element={!user ? <LandingPage /> : (user.role === 'admin' ? <Navigate to="/admin" /> : (user.role === 'analyst' ? <Navigate to="/analyst" /> : <Navigate to="/dashboard" />))} />
